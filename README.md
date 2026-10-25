@@ -23,10 +23,8 @@ Variables de entorno: `EXCHANGE_URL` (dónde está el exchange), `PANEL_HOST`, `
 > Los niveles dibujados hoy y probados sobre el pasado no son una prueba válida (sesgo de retrospectiva): `por_niveles` sirve para comprobar el código y para pruebas hacia adelante.
 
 
-echo "# strategy-sandbox-bot" >> README.md
-git init
-git add README.md
+
+
+git add .
 git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/alexandervillarroel0078/strategy-sandbox-bot.git
 git push -u origin main
