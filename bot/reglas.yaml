@@ -1,0 +1,4 @@
+# Reglas del bot (por_niveles). Este archivo SÍ se versiona en este repo; el panel (python -m bot) lo reescribe.
+activo: false
+zonas: []
+reglas: []

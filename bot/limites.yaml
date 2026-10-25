@@ -1,0 +1,9 @@
+# Límites fijos de las reglas de trading. Se editan A MANO (el panel no los puede cambiar).
+# El panel rechaza lo que los supere y por_niveles también lo valida al cargar (defensa doble).
+# Todos los porcentajes van en % (2 = 2 %). El stop es obligatorio en las reglas que abren posición.
+riesgo_max_pct: 2        # riesgo máximo por operación
+stop_max_pct: 10         # stop máximo
+parcial_min_pct: 10      # toma parcial: porcentaje mínimo de la posición
+parcial_max_pct: 90      # toma parcial: porcentaje máximo de la posición
+max_zonas: 10            # zonas en total
+max_reglas_activas: 10   # reglas con activa: true

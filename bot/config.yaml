@@ -1,0 +1,17 @@
+# Configuración del bot de prueba (bot). Rutas relativas a la raíz del proyecto (btc/).
+api_url: http://127.0.0.1:8001   # mercado simulado (el exchange); la variable EXCHANGE_URL lo sustituye
+
+start: 2024-10-25        # inicio de la simulación (UTC)
+end: null                # fin inclusivo; null = hasta el final de los datos
+clock: 15m               # reloj fino: 15m o 5m
+strategy_timeframe: 1h   # temporalidad en la que decide la estrategia
+
+initial_balance: 10000   # USDT
+fee: 0.001               # comisión 0.1% por operación (compra y venta)
+slippage: 0.0005         # deslizamiento 0.05% (compras, ventas a mercado y stops)
+stop_pct: 0.05           # stop 5% bajo la entrada
+target_pct: 0.10         # objetivo 10% sobre la entrada
+position_fraction: 1.0   # fracción del capital por operación
+
+results_dir: bot/results # CSV de trades y equity
+logs_conservar: 20       # corridas que se conservan en bot/logs/ al iniciar con --log (0 = no borrar nada)

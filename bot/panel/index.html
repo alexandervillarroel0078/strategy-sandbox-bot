@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel del bot</title>
+<style>
+:root{
+  --bg:#f4f6f9;--panel:#fff;--fg:#1d232b;--muted:#667080;--line:#dde2e9;--acc:#2f6fe4;--ctl:#eef1f5;
+  --up:#089981;--down:#e0343f;--warn:#b26a00;--warnbg:#fff4de;
+  /* alias que usa el JS y el resto de la hoja */
+  --card:var(--panel);--mut:var(--muted);--bd:var(--line);--ac:var(--acc);--err:var(--down);--ok:var(--up);--pen:var(--warn);
+  --warn-bg:var(--warnbg);--warn-bd:#e0b43a;--g-bg:var(--panel);--g-fg:var(--fg);--g-line:var(--line)}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1116;--panel:#141820;--fg:#d7dbe0;--muted:#8a919a;--line:#222831;--acc:#4c8dff;--ctl:#1b212b;
+  --up:#26a69a;--down:#ef5350;--warn:#f0b24a;--warnbg:#3a2f14;--warn-bd:#7a5f12}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif}
+#layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1px;background:var(--line)}
+#izq{background:var(--bg);padding:0 16px 16px;min-width:0}
+#side{background:var(--panel);padding:12px 14px;min-width:0}
+#side h2.sec{margin-top:16px}
+#side .kv span:last-child{word-break:break-all}
+#b_salida{max-height:220px;font-size:12px}
+.caja{margin:10px 0;padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-weight:600}
+.caja.ok{color:var(--up);border-color:var(--up)}
+.caja.mal{color:var(--down);border-color:var(--down)}
+.barra{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.barra h1{margin:0;font-size:15px}
+.barra label{display:flex;align-items:center;gap:6px;margin:0}
+.der{margin-left:auto}
+.linea{margin:0;border-radius:0;border-width:0 0 1px;padding:6px 16px;font-size:12px}
+#b_error:empty{display:none}
+h1{font-size:1.3rem;margin:.4em 0}
+h2{margin:0 0 .6em;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;margin:12px 0}
+.aviso{background:var(--warnbg);color:var(--warn);border:1px solid var(--warn-bd);border-radius:8px;padding:8px 12px;margin:12px 0}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+input,select,button{font:inherit;color:var(--fg);background:var(--ctl);border:1px solid var(--line);border-radius:6px;padding:6px 10px;max-width:100%}
+input[type=checkbox]{width:auto;accent-color:var(--acc)}
+input.bad,select.bad{border-color:var(--err)}
+button{cursor:pointer;min-height:34px}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+button.del{color:var(--err)}
+.row{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:start}
+.grid input,.grid select{width:100%}
+.err{color:var(--err);font-size:12px;min-height:0}
+.pen{color:var(--pen);font-size:12px}
+.pend{border-left:3px solid var(--warn-bd);padding-left:8px}
+.mut{color:var(--muted);font-size:13px}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-variant-numeric:tabular-nums}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{text-align:right}
+pre{background:var(--ctl);border:1px solid var(--line);border-radius:6px;padding:10px;overflow:auto;margin:0}
+.guardar{position:sticky;bottom:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:12px 0;display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;margin:12px 0 0}
+.tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#estado.ok{color:var(--ok)}#estado.mal{color:var(--err)}
+ul#resumen{margin:.3em 0;padding-left:1.2em}
+table.d{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+table.d th,table.d td{border-top:1px solid var(--line);padding:2px 6px;text-align:right;white-space:nowrap}
+table.d th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel);border-top:0}
+table.d th:first-child,table.d td:first-child,table.d td.t{text-align:left}
+.tabla{overflow:auto;max-height:320px}
+#v_caja{position:relative;height:calc(100vh - 190px);min-height:340px;margin-top:12px;background:var(--g-bg);border:1px solid var(--g-line);border-radius:6px;overflow:hidden}
+#v_chart{position:absolute;inset:0}
+@media (max-width:800px){#layout{grid-template-columns:1fr}#v_caja{height:52vh}}
+#v_vacio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;padding:20px;text-align:center;z-index:2;pointer-events:none}
+</style>
+</head>
+<body>
+<header class="barra">
+  <h1>Panel del bot</h1>
+  <span>Bot: <strong id="b_estado" role="status">Sin iniciar</strong></span>
+  <span class="der mut">Ahora simulado: <span id="d_ahora">—</span></span>
+  <span id="v_retraso" class="mut"></span>
+</header>
+<div class="barra">
+  <label for="b_inicio">Inicio (UTC) <input type="date" id="b_inicio" value="2025-09-01"></label>
+  <label for="b_fin">Fin (UTC, inclusivo) <input type="date" id="b_fin" value="2025-09-07"></label>
+  <label for="b_estrategia">Estrategia <select id="b_estrategia"><option>ejemplo</option><option>donchian</option><option>por_niveles</option></select></label>
+  <button class="primary" id="b_iniciar" type="button">Iniciar bot</button>
+  <button id="b_detener" type="button" disabled>Detener</button>
+  <span class="mut">·</span>
+  <label for="v_int">Intervalo <select id="v_int"></select></label>
+  <label for="v_modo">Velocidad <select id="v_modo"><option value="fluido">Fluido</option><option value="rapido">Rápido ×4</option><option value="instantaneo">Instantáneo</option></select></label>
+</div>
+<div class="aviso linea"><strong>Aviso:</strong> los niveles dibujados hoy y probados sobre el pasado no son una prueba válida (sesgo de retrospectiva). Solo la estrategia <code>por_niveles</code> usa las reglas, y se leen al arrancar el bot.</div>
+<div class="err linea" id="b_error"></div>
+<div class="aviso linea" id="b_aviso" hidden></div>
+
+<div id="layout">
+<div id="izq">
+<div id="v_caja">
+    <div id="v_chart" role="img" aria-label="Gráfico de velas recibidas por el bot"></div>
+    <p id="v_vacio" class="mut">Sin datos todavía.</p>
+  </div>
+<p class="mut">Solo las velas que el bot recibe en la corrida actual, dibujadas en vivo, vela por vela. Rueda para el zoom, arrastra para desplazar.</p>
+
+<div class="tabs" role="tablist">
+  <button type="button" class="on" data-tab="datos" role="tab">Datos</button>
+  <button type="button" data-tab="reglas" role="tab">Reglas</button>
+  <button type="button" data-tab="yaml" role="tab">YAML</button>
+</div>
+
+<div id="tab_datos" data-panel="datos">
+<section id="datos">
+  <h2>Datos recibidos</h2>
+  <p class="mut">Lo que recibe el bot, en vivo desde <code>bot/logs/</code> (solo lectura).</p>
+  <p id="d_vacio" class="mut">Sin datos todavía.</p>
+  <div id="d_tablas" hidden>
+    <h3 class="mut" style="margin:.4em 0">Últimas 10 velas recibidas</h3>
+    <div class="tabla"><table class="d"><thead><tr><th>Hora (UTC)</th><th>Fuente</th><th>Apertura</th><th>Máximo</th><th>Mínimo</th><th>Cierre</th></tr></thead><tbody id="d_velas"></tbody></table></div>
+    <h3 class="mut" style="margin:.8em 0 .4em">Últimas 10 decisiones</h3>
+    <div class="tabla"><table class="d"><thead><tr><th>Hora simulada</th><th>Acción</th><th>Motivo</th><th>Precio</th><th>RSI</th><th>EMA50</th><th>EMA200</th></tr></thead><tbody id="d_decisiones"></tbody></table></div>
+  </div>
+</section>
+</div>
+
+<div id="tab_reglas" data-panel="reglas" hidden>
+<div id="limites" class="mut" style="margin:12px 0 0"></div>
+<section>
+  <h2>Interruptor</h2>
+  <label style="display:flex;gap:8px;align-items:center;color:var(--fg);font-size:1rem"><input type="checkbox" id="activo" data-path="activo"> Reglas activas (interruptor global)</label>
+  <div class="err" data-err="activo"></div>
+</section>
+
+<section>
+  <h2>Zonas</h2>
+  <div id="zonas"></div>
+  <div class="err" data-err="zonas"></div>
+  <button id="addZona" type="button">+ Agregar zona</button>
+</section>
+
+<section>
+  <h2>Reglas</h2>
+  <div id="reglas"></div>
+  <div class="err" data-err="reglas"></div>
+  <button id="addRegla" type="button">+ Agregar regla</button>
+</section>
+
+<div class="guardar">
+  <button class="primary" id="guardar" type="button">Guardar reglas.yaml</button>
+  <span id="estado" role="status"></span>
+  <ul id="resumen"></ul>
+</div>
+</div>
+
+<div id="tab_yaml" data-panel="yaml" hidden>
+<section>
+  <h2>Vista previa del YAML</h2>
+  <pre id="yaml"></pre>
+</section>
+</div>
+</div>
+<aside id="side">
+  <h2>Resultado del bot</h2>
+  <div class="kv"><span>Operaciones</span><span id="b_operaciones">—</span></div>
+  <div class="kv"><span>Retorno</span><span id="b_retorno">—</span></div>
+  <div class="kv"><span>Registro</span><span id="b_registro">—</span></div>
+  <div id="b_resultado" class="caja">—</div>
+  <p class="mut">Modo: exchange simulado (envía las órdenes al exchange), con registro completo en <code>bot/logs/</code>.</p>
+  <h2 class="sec">Salida del bot</h2>
+  <pre id="b_salida" aria-live="off"></pre>
+</aside>
+</div>
+
+
+<script src="/lightweight-charts.js"></script>
+<script>
+function mostrarTab(n) {
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === n));
+  document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== n; });
+}
+document.querySelectorAll("[data-tab]").forEach(b => { b.onclick = () => mostrarTab(b.dataset.tab); });
+</script>
+<script>
+"use strict";
+let LIM = null, GLOB = null, RANGOS = null;
+let S = {activo: false, zonas: [], reglas: []};
+
+const $ = (s, r = document) => r.querySelector(s);
+function el(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "text") e.textContent = v; else if (k === "class") e.className = v; else if (k in e) e[k] = v; else e.setAttribute(k, v);
+  }
+  kids.flat().filter(c => c != null).forEach(c => e.append(c));
+  return e;
+}
+const num = v => (v === "" || v == null) ? null : Number(v);
+const fmt = n => String(Math.round(n * 1000) / 1000);
+
+// ---- helpers para enlazar inputs al estado (path "a.b.c") ----
+function getp(o, p) { return p.split(".").reduce((a, k) => a == null ? a : a[k], o); }
+function setp(o, p, v) {
+  const ks = p.split("."); const last = ks.pop();
+  const t = ks.reduce((a, k) => (a[k] == null ? (a[k] = {}) : a[k]), o);
+  if (v === null || v === "" || v === undefined) delete t[last]; else t[last] = v;
+}
+function campo(path, label, type, opts = {}, pendiente = "") {
+  const {onchange, options, ...extra} = opts;
+  const v = getp(S, path);
+  let inp;
+  if (type === "select") {
+    inp = el("select", {}, options.map(([val, txt]) => el("option", {value: val, text: txt})));
+    inp.value = v ?? "";
+  } else if (type === "checkbox") {
+    inp = el("input", {type: "checkbox", checked: v !== false});
+  } else {
+    inp = el("input", {type: "number", step: "any", value: v ?? "", ...extra});
+  }
+  inp.dataset.path = path;
+  const fn = () => {
+    let val = type === "checkbox" ? inp.checked : type === "select" || type === "text" ? inp.value : num(inp.value);
+    setp(S, path, val);
+    if (onchange) onchange();
+    preview();
+  };
+  inp.addEventListener("input", fn); inp.addEventListener("change", fn);
+  const box = el("div", {class: pendiente ? "pend" : ""}, el("label", {text: label}), inp, el("div", {class: "err", "data-err": path}));
+  return box;
+}
+
+// ---- render ----
+function render() {
+  $("#activo").checked = !!S.activo;
+  const z = $("#zonas"); z.replaceChildren();
+  S.zonas.forEach((zona, i) => {
+    const p = `zonas.${i}`;
+    const nombre = campo(`${p}.nombre`, "Nombre", "text");
+    const inp = nombre.querySelector("input"); inp.type = "text"; inp.value = zona.nombre ?? ""; inp.maxLength = 40;
+    inp.addEventListener("change", renderReglas);
+    z.append(el("div", {class: "row"},
+      el("div", {class: "grid"}, nombre,
+        campo(`${p}.tipo`, "Tipo", "select", {options: [["soporte", "Soporte"], ["resistencia", "Resistencia"]]}),
+        campo(`${p}.desde`, "Desde (precio)", "number", {min: 0}),
+        campo(`${p}.hasta`, "Hasta (precio)", "number", {min: 0}),
+        campo(`${p}.activa`, "Activa", "checkbox"),
+        el("div", {}, el("label", {text: " "}), el("button", {class: "del", type: "button", text: "Quitar", onclick: () => { S.zonas.splice(i, 1); render(); preview(); }})))));
+  });
+  renderReglas();
+  const L = LIM, G = GLOB;
+  $("#limites").textContent = L ? `Límites (bot/limites.yaml, solo a mano): riesgo máx. ${L.riesgo_max_pct} % · stop obligatorio, máx. ${L.stop_max_pct} % · parcial entre ${L.parcial_min_pct} % y ${L.parcial_max_pct} % · máx. ${L.max_zonas} zonas · máx. ${L.max_reglas_activas} reglas activas · EMA ${RANGOS.ema[0]}–${RANGOS.ema[1]} · RSI entre ${RANGOS.rsi[0]} y ${RANGOS.rsi[1]}` : "";
+  preview();
+}
+
+function renderReglas() {
+  const cont = $("#reglas"); cont.replaceChildren();
+  const zonasOpt = [["", "— elegir zona —"], ...S.zonas.filter(z => z.nombre).map(z => [z.nombre, z.nombre])];
+  const aviso = "Estos campos todavía no se aplican: abrir_short, stop_pct, parcial y riesgo_pct. Se guardan y validan, pero el bot los ignora" +
+    (GLOB ? `: usa el stop global de ${fmt(GLOB.stop_pct)} % y ${fmt(GLOB.position_fraction_pct)} % del capital por operación (config.yaml), y el Broker cierra siempre la posición entera.` : ".");
+  S.reglas.forEach((r, i) => {
+    const p = `reglas.${i}`;
+    const row = el("div", {class: "row"});
+    row.append(el("div", {class: "grid"},
+      campo(`${p}.zona`, "Zona", "select", {options: zonasOpt}),
+      campo(`${p}.accion`, "Acción", "select", {options: [["abrir_long", "Abrir long"], ["cerrar_long", "Cerrar long"], ["solo_avisar", "Solo avisar"], ["abrir_short", "Abrir short (pendiente)"]], onchange: renderReglas}),
+      campo(`${p}.activa`, "Activa", "checkbox"),
+      el("div", {}, el("label", {text: " "}), el("button", {class: "del", type: "button", text: "Quitar", onclick: () => { S.reglas.splice(i, 1); render(); preview(); }}))));
+    row.append(el("p", {class: "mut", text: "Confirmaciones (opcionales). La regla se evalúa al cerrar una vela que toca la zona."}));
+    row.append(el("div", {class: "grid"},
+      campo(`${p}.confirmaciones.cierre_fuera_zona`, "Cierre de vela fuera de la zona", "select", {options: [["", "No exigir"], ["arriba", "Cierra por encima"], ["abajo", "Cierra por debajo"]]}),
+      campo(`${p}.confirmaciones.rsi.op`, "RSI (14)", "select", {options: [["", "No exigir"], ["mayor", "mayor que"], ["menor", "menor que"]], onchange: () => { if (!r.confirmaciones?.rsi?.op) setp(r, "confirmaciones.rsi", null); renderReglas(); }}),
+      campo(`${p}.confirmaciones.rsi.valor`, "Valor RSI", "number", {min: 0, max: 100}),
+      campo(`${p}.confirmaciones.ema.op`, "Precio vs EMA", "select", {options: [["", "No exigir"], ["sobre", "sobre la EMA"], ["bajo", "bajo la EMA"]], onchange: () => { if (!r.confirmaciones?.ema?.op) setp(r, "confirmaciones.ema", null); renderReglas(); }}),
+      campo(`${p}.confirmaciones.ema.n`, "EMA N", "number", {min: RANGOS?.ema[0], max: RANGOS?.ema[1], step: 1})));
+    row.append(el("p", {class: "pen", text: aviso}));
+    row.append(el("div", {class: "grid"},
+      campo(`${p}.stop_pct`, "Stop % (obligatorio al abrir)", "number", {min: 0}, true),
+      campo(`${p}.riesgo_pct`, "Riesgo % por operación", "number", {min: 0}, true),
+      campo(`${p}.parcial.porcentaje`, "Parcial: % de la posición", "number", {min: 0}, true),
+      campo(`${p}.parcial.condicion.tipo`, "Parcial: condición", "select", {options: [["", "—"], ["ema", "Precio toca EMA N"], ["pct", "Precio +X %"]], onchange: renderReglas}, true),
+      r.parcial?.condicion?.tipo === "ema" ? campo(`${p}.parcial.condicion.n`, "EMA N", "number", {step: 1, min: 2}) : null,
+      r.parcial?.condicion?.tipo === "pct" ? campo(`${p}.parcial.condicion.valor`, "+X %", "number", {min: 0}) : null));
+    cont.append(row);
+  });
+}
+function limpio() {
+  const prune = o => {
+    if (Array.isArray(o)) return o.map(prune);
+    if (o && typeof o === "object") {
+      const out = {};
+      for (const [k, v] of Object.entries(o)) {
+        const w = prune(v);
+        if (w === undefined || w === null || w === "" || (typeof w === "object" && !Array.isArray(w) && !Object.keys(w).length)) continue;
+        out[k] = w;
+      }
+      return out;
+    }
+    return o;
+  };
+  return {activo: !!S.activo, zonas: prune(S.zonas), reglas: prune(S.reglas)};
+}
+
+// ---- YAML de vista previa (estructura simple: dict/list/escalares) ----
+function ys(v) { return typeof v === "string" ? (/^[\w .\-]+$/.test(v) && !/^(true|false|null|[\d.\-]+)$/i.test(v) ? v : JSON.stringify(v)) : String(v); }
+function toYaml(o, ind = 0) {
+  const pad = "  ".repeat(ind); let out = "";
+  if (Array.isArray(o)) {
+    if (!o.length) return pad + "[]\n";
+    for (const it of o) {
+      if (it && typeof it === "object") {
+        const inner = toYaml(it, ind + 1).split("\n"); inner[0] = pad + "- " + inner[0].trimStart();
+        out += inner.join("\n");
+      } else out += `${pad}- ${ys(it)}\n`;
+    }
+  } else {
+    for (const [k, v] of Object.entries(o)) {
+      if (v && typeof v === "object") {
+        if (Array.isArray(v) && !v.length) out += `${pad}${k}: []\n`;
+        else out += `${pad}${k}:\n` + toYaml(v, ind + (Array.isArray(v) ? 0 : 1));
+      } else out += `${pad}${k}: ${ys(v)}\n`;
+    }
+  }
+  return out;
+}
+function preview() { $("#yaml").textContent = toYaml(limpio()); }
+
+// ---- errores junto al campo ----
+function mostrarErrores(errs) {
+  document.querySelectorAll(".err").forEach(e => e.textContent = "");
+  document.querySelectorAll(".bad").forEach(e => e.classList.remove("bad"));
+  const sueltos = [];
+  for (const e of errs) {
+    const d = [...document.querySelectorAll("[data-err]")].find(x => x.dataset.err === e.campo);
+    if (d) {
+      d.textContent = e.mensaje;
+      const i = [...document.querySelectorAll("[data-path]")].find(x => x.dataset.path === e.campo);
+      if (i) i.classList.add("bad");
+    } else sueltos.push(e);
+  }
+  const ul = $("#resumen"); ul.replaceChildren();
+  sueltos.forEach(e => ul.append(el("li", {text: `${e.campo || "general"}: ${e.mensaje}`})));
+}
+
+async function guardar() {
+  const st = $("#estado"); st.className = ""; st.textContent = "Guardando…";
+  let r, j;
+  try {
+    r = await fetch("/reglas", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(limpio())});
+    j = await r.json();
+  } catch (e) { mostrarTab("reglas"); st.className = "mal"; st.textContent = "No se pudo contactar con el panel."; return; }
+  if (r.ok) { mostrarErrores([]); st.className = "ok"; st.textContent = "Guardado en bot/reglas.yaml"; }
+  else if (j.errores) { mostrarTab("reglas"); mostrarErrores(j.errores); st.className = "mal"; st.textContent = `No guardado: ${j.errores.length} error(es). Nada se escribió.`; }
+  else { mostrarTab("reglas"); st.className = "mal"; st.textContent = "No guardado: " + (j.error || r.status); }
+}
+
+async function init() {
+  const [l, r] = await Promise.all([fetch("/limites").then(x => x.json()), fetch("/reglas").then(x => x.json())]);
+  LIM = l.limites; GLOB = l.globales; RANGOS = l.rangos;
+  S = {activo: !!r.activo, zonas: r.zonas || [], reglas: r.reglas || []};
+  render();
+}
+$("#activo").addEventListener("change", e => { S.activo = e.target.checked; preview(); });
+$("#addZona").onclick = () => { S.zonas.push({nombre: "", tipo: "soporte", activa: true}); render(); };
+$("#addRegla").onclick = () => { S.reglas.push({zona: "", accion: "abrir_long", activa: true}); render(); };
+$("#guardar").onclick = guardar;
+
+// ---- control del bot (proceso aparte; el panel solo consulta /bot/estado) ----
+const ETIQ = {sin_iniciar: "Sin iniciar", corriendo: "Corriendo…", terminado: "Terminado", error: "Con error", detenido: "Detenido"};
+let ultimaSalida = "";
+function pintarBot(j) {
+  const est = j.estado, vivo = est === "corriendo";
+  const b = $("#b_estado"); b.textContent = ETIQ[est] || est;
+  b.style.color = est === "terminado" ? "var(--ok)" : (est === "error" ? "var(--err)" : (est === "detenido" ? "var(--pen)" : ""));
+  $("#b_iniciar").disabled = vivo; $("#b_detener").disabled = !vivo;
+  const av = $("#b_aviso"); av.hidden = !j.aviso; av.textContent = j.aviso || "";
+  const fin = est === "terminado";
+  $("#b_operaciones").textContent = fin ? (j.operaciones ?? "?") : "—";
+  $("#b_retorno").textContent = fin ? (j.retorno ?? "?") : "—";
+  $("#b_registro").textContent = (fin || est === "detenido") && j.registro ? j.registro : "—";
+  const caja = $("#b_resultado");
+  caja.className = "caja" + (fin ? " ok" : est === "error" ? " mal" : "");
+  caja.textContent = est === "error" ? `El bot terminó con error (código ${j.codigo}). Mira las últimas líneas.` : (ETIQ[est] || est);
+  const texto = (j.lineas || []).slice(-40).join("\n");
+  if (texto !== ultimaSalida) { ultimaSalida = texto; const pre = $("#b_salida"); pre.textContent = texto; pre.scrollTop = pre.scrollHeight; }
+}
+async function llamarBot(ruta, cuerpo) {
+  $("#b_error").textContent = "";
+  try {
+    const r = await fetch(ruta, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(cuerpo || {})});
+    const j = await r.json();
+    if (!r.ok) { $("#b_error").textContent = j.error || ("Error " + r.status); return; }
+    pintarBot(j);
+  } catch (e) { $("#b_error").textContent = "No se pudo contactar con el panel."; }
+}
+async function refrescarBot() {
+  try { pintarBot(await (await fetch("/bot/estado")).json()); } catch (e) { /* el panel no responde: se reintenta */ }
+}
+$("#b_iniciar").onclick = () => llamarBot("/bot/iniciar", {inicio: $("#b_inicio").value, fin: $("#b_fin").value, estrategia: $("#b_estrategia").value});
+$("#b_detener").onclick = () => llamarBot("/bot/detener");
+refrescarBot(); setInterval(refrescarBot, 1000);
+// ---- datos recibidos (solo lectura de /bot/datos; todo se pinta con textContent) ----
+const fnum = (v, d = 2) => v == null ? "" : Number(v).toLocaleString("es", {minimumFractionDigits: d, maximumFractionDigits: d});
+function llenar(id, filas) {
+  const tb = $(id); tb.textContent = "";
+  for (const f of filas.slice().reverse()) {   // la más reciente arriba
+    const tr = document.createElement("tr");
+    f.forEach((v, i) => { const td = document.createElement("td"); td.textContent = v ?? ""; if (i === 1 || (id === "#d_decisiones" && i === 2)) td.className = "t"; tr.appendChild(td); });
+    tb.appendChild(tr);
+  }
+}
+function pintarDatos(j) {
+  const ok = j.estado === "ok";
+  $("#d_vacio").hidden = ok; $("#d_tablas").hidden = !ok;
+  $("#d_ahora").textContent = (ok && j.ahora_iso) ? j.ahora_iso + " UTC" : "—";
+  if (!ok) return;
+  llenar("#d_velas", j.velas.map(v => [v.hora, v.fuente + (v.intervalo ? " " + v.intervalo : ""), fnum(v.open), fnum(v.high), fnum(v.low), fnum(v.close)]));
+  llenar("#d_decisiones", j.decisiones.map(d => [d.ahora_iso, d.accion, d.motivo, fnum(d.precio), fnum(d.rsi), fnum(d.ema50), fnum(d.ema200)]));
+}
+async function refrescarDatos() {
+  try { pintarDatos(await (await fetch("/bot/datos")).json()); } catch (e) { /* el panel no responde: se reintenta */ }
+}
+refrescarDatos(); setInterval(refrescarDatos, 1000);
+// ---- velas recibidas (solo lectura de /bot/velas; el texto va con fillText/textContent) ----
+// <logica-cola>  (funciones puras, sin DOM: las ejecuta un test con node)
+const VMAX = 200, GRAF_MAX = 1000, COLA_MAX = 1000, CUADRO_MAX = 25, ESPERA_COLA_S = 1.5, BASE = {fluido: 30, rapido: 120};
+function colaNueva() { return {velas: [], cola: [], desde: null, corrida: null, intervalo: null, restantes: 0, acum: 0, sucio: false, gen: 0}; }
+function colaVaciar(est) { const g = est.gen + 1; Object.assign(est, colaNueva(), {sucio: true, gen: g}); }   // gen cambia cuando el gráfico debe recargarse entero
+function ultimaT(est) {
+  const u = est.cola.length ? est.cola[est.cola.length - 1] : est.velas[est.velas.length - 1];
+  return u ? u.t : -1;
+}
+function igual(a, b) { return a.open === b.open && a.high === b.high && a.low === b.low && a.close === b.close && a.volume === b.volume; }
+// Aplica una respuesta de /bot/velas. Devuelve true si hay que volver a pedir la foto (sin ?desde).
+function fusionar(est, j) {
+  if (j.estado !== "ok") { colaVaciar(est); return false; }
+  const foto = est.desde === null || j.reinicio;
+  if (!foto && (est.corrida !== j.corrida || est.intervalo !== j.intervalo)) { colaVaciar(est); return true; }   // corrida o intervalo nuevos
+  if (foto) {
+    est.velas = j.velas.slice(-VMAX); est.cola = []; est.acum = 0; est.sucio = true; est.gen++;
+    est.corrida = j.corrida; est.intervalo = j.intervalo;
+  } else {
+    for (const v of j.velas) {
+      const k = est.cola.findIndex(c => c.t === v.t), u = est.velas[est.velas.length - 1];
+      if (k >= 0) est.cola[k] = v;                                              // actualizada mientras esperaba
+      else if (u && u.t === v.t) { if (!igual(u, v)) { est.velas[est.velas.length - 1] = v; est.sucio = true; } }   // la última dibujada cambió
+      else if (v.t > ultimaT(est)) est.cola.push(v);                            // nueva
+      /* si no: una ya dibujada que no es la última, o más antigua: se ignora */
+    }
+    if (est.cola.length > COLA_MAX) { est.velas = est.velas.concat(est.cola).slice(-VMAX); est.cola = []; est.acum = 0; est.sucio = true; est.gen++; }   // muy atrasado: salta al final
+  }
+  if (j.velas.length) est.desde = j.velas[j.velas.length - 1].t;
+  est.restantes = foto ? 0 : j.restantes;
+  return false;
+}
+// Velas por segundo: el ritmo del modo, o más si la cola crece (así el retraso no pasa de ~ESPERA_COLA_S).
+function ritmo(est, modo) { return Math.max(BASE[modo] || BASE.fluido, est.cola.length / ESPERA_COLA_S); }
+// Pasa velas de la cola al gráfico según el tiempo transcurrido. Devuelve cuántas dibujó.
+function avanzar(est, dtMs, modo) {
+  if (!est.cola.length) { est.acum = 0; return 0; }
+  let n;
+  if (modo === "instantaneo") n = est.cola.length;
+  else {
+    est.acum += Math.min(dtMs, 250) / 1000 * ritmo(est, modo);
+    n = Math.min(Math.floor(est.acum), CUADRO_MAX, est.cola.length);
+    est.acum = Math.min(est.acum - n, CUADRO_MAX);
+  }
+  if (n > 0) { est.velas = est.velas.concat(est.cola.splice(0, n)).slice(-VMAX); est.sucio = true; }
+  return n;
+}
+function retraso(est) { return est.cola.length + (est.restantes || 0); }   // velas que el bot ya escribió y aún no se dibujan
+// Qué hay que hacerle al gráfico para que muestre `velas`: recargarlo entero (set) o solo update de lo nuevo.
+// prev = lo ya entregado al gráfico ({gen, ultT, ultima, n}) o null. Una vela reescrita reemplaza a la última; el gráfico
+// conserva las que salen por la izquierda hasta GRAF_MAX puntos, y entonces se recarga con las actuales.
+function planear(prev, velas, gen) {
+  if (!velas.length) return {set: prev !== null, upd: [], prev: null};
+  const nuevo = (n, u) => ({gen, ultT: u.t, ultima: u, n});
+  const i = prev && prev.gen === gen ? velas.findIndex(v => v.t === prev.ultT) : -1;
+  if (i < 0) return {set: true, upd: [], prev: nuevo(velas.length, velas[velas.length - 1])};   // primera vez, otra corrida o salto
+  const upd = igual(velas[i], prev.ultima) ? velas.slice(i + 1) : velas.slice(i);
+  const n = prev.n + velas.length - 1 - i;
+  if (n > GRAF_MAX) return {set: true, upd: [], prev: nuevo(velas.length, velas[velas.length - 1]), recorte: true};
+  return {set: false, upd, prev: nuevo(n, velas[velas.length - 1])};
+}
+// </logica-cola>
+const vel = colaNueva();
+let vgen = 0, vmodo = "fluido", vUlt = 0;
+// Gráfico: lightweight-charts 4.1.3 (bot/panel/), con la paleta y las proporciones del visor. Zoom, arrastre y cruz son los de la librería.
+const g = {chart: null, velas: null, vol: null, prev: null};
+const colorG = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const volPunto = v => ({time: v.t / 1000, value: v.volume, color: colorG(v.close >= v.open ? "--up" : "--down") + "66"});
+const velaPunto = v => ({time: v.t / 1000, open: v.open, high: v.high, low: v.low, close: v.close});
+function crearGrafico() {
+  if (g.chart || typeof LightweightCharts === "undefined") return !!g.chart;
+  g.chart = LightweightCharts.createChart($("#v_chart"), {autoSize: true});
+  g.velas = g.chart.addCandlestickSeries({borderVisible: false});
+  g.vol = g.chart.addHistogramSeries({priceFormat: {type: "volume"}, priceScaleId: ""});
+  g.vol.priceScale().applyOptions({scaleMargins: {top: 0.8, bottom: 0}});   // volumen en el 20% inferior
+  temaGrafico();
+  return true;
+}
+function temaGrafico() {
+  if (!g.chart) return;
+  g.chart.applyOptions({
+    layout: {background: {type: "solid", color: colorG("--g-bg")}, textColor: colorG("--g-fg")},
+    grid: {vertLines: {color: colorG("--g-line")}, horzLines: {color: colorG("--g-line")}},
+    rightPriceScale: {borderColor: colorG("--g-line")},
+    timeScale: {borderColor: colorG("--g-line"), timeVisible: true, secondsVisible: false, rightOffset: 6}});
+  g.velas.applyOptions({upColor: colorG("--up"), downColor: colorG("--down"), wickUpColor: colorG("--up"), wickDownColor: colorG("--down")});
+  if (vel.velas.length) g.vol.setData(vel.velas.map(volPunto));         // el color del volumen va dentro de cada punto
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", temaGrafico);
+function pintarVelas() {
+  if (!crearGrafico()) return;
+  const vs = vel.velas, p = planear(g.prev, vs, vel.gen);
+  g.prev = p.prev;
+  if (p.set) {
+    const rango = p.recorte ? g.chart.timeScale().getVisibleRange() : null;   // al recortar se conserva lo que el usuario está mirando
+    g.velas.setData(vs.map(velaPunto)); g.vol.setData(vs.map(volPunto));
+    if (p.recorte && rango) { try { g.chart.timeScale().setVisibleRange(rango); } catch (e) { /* rango ya fuera de los datos */ } }
+    else if (vs.length) g.chart.timeScale().fitContent();
+  }
+  for (const v of p.upd) { g.velas.update(velaPunto(v)); g.vol.update(volPunto(v)); }   // nueva, o la última reescrita
+}
+function pintarEstadoVelas() {
+  const hay = vel.velas.length > 0, n = retraso(vel);
+  const lib = typeof LightweightCharts !== "undefined";
+  $("#v_vacio").textContent = lib ? "Sin datos todavía." : "No se pudo cargar el gráfico (/lightweight-charts.js).";
+  $("#v_vacio").hidden = hay && lib; $("#v_int").disabled = !hay;
+  $("#v_retraso").textContent = !hay ? "" : n === 0 ? "Al día" : `Retraso: ${n} vela${n === 1 ? "" : "s"}`;
+}
+function cuadroVelas(t) {
+  const dt = vUlt ? t - vUlt : 16; vUlt = t;
+  avanzar(vel, dt, vmodo);
+  if (vel.sucio) { vel.sucio = false; pintarEstadoVelas(); pintarVelas(); }
+  requestAnimationFrame(cuadroVelas);
+}
+function aplicarVelas(j) {
+  const sel = $("#v_int");
+  if (j.estado === "ok" && (sel.options.length !== j.intervalos.length || j.intervalos.some((v, i) => sel.options[i].value !== v))) {
+    sel.textContent = "";
+    j.intervalos.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
+  }
+  const resync = fusionar(vel, j);
+  if (j.estado === "ok") sel.value = j.intervalo;
+  vel.sucio = true;                                      // el siguiente cuadro repinta (también el aviso de retraso)
+  return resync || (j.estado === "ok" && !!j.hay_mas);   // hay que volver a pedir ya, sin esperar
+}
+async function cicloVelas() {
+  let espera = 500;
+  const gen = vgen, q = [];
+  if ($("#v_int").value) q.push("intervalo=" + encodeURIComponent($("#v_int").value));
+  if (vel.desde !== null) q.push("desde=" + vel.desde);
+  try {
+    const j = await (await fetch("/bot/velas" + (q.length ? "?" + q.join("&") : ""))).json();
+    if (gen === vgen && aplicarVelas(j)) espera = 0;     // una respuesta de antes del último reinicio se descarta
+  } catch (e) { /* el panel no responde: se reintenta */ }
+  setTimeout(cicloVelas, espera);
+}
+$("#v_int").onchange = () => { vgen++; colaVaciar(vel); };
+$("#v_modo").onchange = () => { vmodo = $("#v_modo").value; };
+requestAnimationFrame(cuadroVelas); cicloVelas();
+init().catch(() => { $("#estado").className = "mal"; $("#estado").textContent = "No se pudo cargar reglas/límites."; });
+</script>
+</body>
+</html>

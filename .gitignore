@@ -1,0 +1,16 @@
+# Registros y resultados de las corridas del bot
+bot/logs/
+bot/results/
+*.csv
+*.jsonl
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Claves y entorno
+.env
+.env.*

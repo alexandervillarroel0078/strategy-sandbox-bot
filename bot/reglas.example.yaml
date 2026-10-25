@@ -1,0 +1,4 @@
+# EJEMPLO / valor por defecto. bot/reglas.yaml (versionado) lo escribe el panel: python -m bot. Si falta reglas.yaml el bot usa este archivo.
+activo: false
+zonas: []
+reglas: []

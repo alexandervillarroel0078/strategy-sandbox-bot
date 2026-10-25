@@ -1,0 +1,5 @@
+# Dependencias del bot (sin python-binance: el bot no descarga datos)
+pandas
+numpy
+pyyaml
+pytest
